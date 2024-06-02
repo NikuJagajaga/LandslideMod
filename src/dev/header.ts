@@ -32,7 +32,7 @@ namespace Landslide {
 
     export function addGravityBlock(id: number): void {
         gravityBlocks[id] = true;
-        //World.setBlockChangeCallbackEnabled(id, true);
+        World.setBlockChangeCallbackEnabled(id, true);
     }
 
 
@@ -128,6 +128,29 @@ namespace Landslide {
     }
 
 
+    export function collapse(player: number): void {
+
+        const region = BlockSource.getDefaultForActor(player);
+        const coords = Landslide.integerCoords(Entity.getPosition(player));
+        let block: BlockState;
+        let depth = 2;
+    
+        while(true){
+            block = region.getBlock(coords.x, coords.y - depth, coords.z);
+            if(!Landslide.isGravityBlock(block.id)){
+                break;
+            }
+            depth++;
+        }
+    
+        if(depth > 2 && World.canTileBeReplaced(block.id, block.data)){
+            region.setBlock(coords.x, coords.y - depth, coords.z, 1, 0);
+            region.setBlock(coords.x, coords.y - depth, coords.z, block);
+        }
+
+    }
+
+
 }
 
 
@@ -142,12 +165,25 @@ Landslide.Cfg.Destroy && Callback.addCallback("DestroyBlock", (coords, block, pl
     Landslide.inside(coords.x, coords.y + 1, coords.z, BlockSource.getDefaultForActor(player));
 });
 
-
 Landslide.Cfg.Build && Callback.addCallback("ItemUse", (coords, item, block, isExternal, player) => {
     Threading.initThread("landslide", () => {
         Landslide.outside(coords.relative.x, coords.relative.y, coords.relative.z, BlockSource.getDefaultForActor(player));
     });
 });
+
+
+// Callback.addCallback("BlockChanged", (coords, oldBlock, newBlock, region) => {
+
+//     if(oldBlock.id !== newBlock.id || oldBlock.data !== newBlock.data){
+
+//         if(Landslide.isGravityBlock(newBlock.id)){
+//             Game.message(!!region);
+//             Landslide.outside(coords.x, coords.y, coords.z, region || BlockSource.getCurrentWorldGenRegion());
+//         }
+
+//     }
+
+// });
 
 Landslide.Cfg.Fall && Callback.addCallback("EntityRemoved", (entity) => {
     if(Entity.getType(entity) === EEntityType.FALLING_BLOCK){
@@ -156,28 +192,11 @@ Landslide.Cfg.Fall && Callback.addCallback("EntityRemoved", (entity) => {
     }
 });
 
-
-// Callback.addCallback("LocalTick", () => {
-
-//     const region = BlockSource.getDefaultForActor(Player.get());
-//     const coords = Landslide.integerCoords(Player.getPosition());
-//     let block: BlockState;
-//     let depth = 2;
-
-//     while(true){
-//         block = region.getBlock(coords.x, coords.y - depth, coords.z);
-//         if(!Landslide.isGravityBlock(block.id)){
-//             break;
-//         }
-//         depth++;
-//     }
-
-//     if(depth > 2 && World.canTileBeReplaced(block.id, block.data)){
-//         region.setBlock(coords.x, coords.y - depth, coords.z, 1, 0);
-//         region.setBlock(coords.x, coords.y - depth, coords.z, block);
-//     }
-
-// });
+Landslide.Cfg.Collapse && Callback.addCallback("tick", () => {
+    for(const player of Network.getConnectedPlayers()){
+        Landslide.collapse(player);
+    }
+});
 
 
 

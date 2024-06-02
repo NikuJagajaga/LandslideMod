@@ -1,5 +1,22 @@
+__config__.checkAndRestore({
+    enabled: true,
+    Landslide: {
+        Fall: true,
+        Destroy: true,
+        Build: true,
+        Chain: true
+    },
+    Collapse: true
+});
 var Landslide;
 (function (Landslide) {
+    Landslide.Cfg = {
+        Fall: __config__.getBool("Landslide.Fall"),
+        Destroy: __config__.getBool("Landslide.Destroy"),
+        Build: __config__.getBool("Landslide.Build"),
+        Chain: __config__.getBool("Landslide.Chain"),
+        Collapse: __config__.getBool("Collapse")
+    };
     var gravityBlocks = {};
     function isGravityBlock(id) {
         return gravityBlocks[id] || false;
@@ -47,7 +64,7 @@ var Landslide;
                 if (isGravityBlock(neighbour.id)) {
                     region.destroyBlock(coords.x, coords.y, coords.z, false);
                     region.setBlock(x, y, z, neighbour.id, neighbour.data);
-                    inside(coords.x, coords.y + 1, coords.z, region);
+                    Landslide.Cfg.Chain && inside(coords.x, coords.y + 1, coords.z, region);
                     break;
                 }
             }
@@ -75,24 +92,48 @@ var Landslide;
         }
     }
     Landslide.outside = outside;
+    function collapse(player) {
+        var region = BlockSource.getDefaultForActor(player);
+        var coords = Landslide.integerCoords(Entity.getPosition(player));
+        var block;
+        var depth = 2;
+        while (true) {
+            block = region.getBlock(coords.x, coords.y - depth, coords.z);
+            if (!Landslide.isGravityBlock(block.id)) {
+                break;
+            }
+            depth++;
+        }
+        if (depth > 2 && World.canTileBeReplaced(block.id, block.data)) {
+            region.setBlock(coords.x, coords.y - depth, coords.z, 1, 0);
+            region.setBlock(coords.x, coords.y - depth, coords.z, block);
+        }
+    }
+    Landslide.collapse = collapse;
 })(Landslide || (Landslide = {}));
 Landslide.addGravityBlock(VanillaTileID.sand);
 Landslide.addGravityBlock(VanillaTileID.gravel);
 Landslide.addGravityBlock(VanillaTileID.dragon_egg);
 Landslide.addGravityBlock(VanillaTileID.anvil);
 Landslide.addGravityBlock(VanillaTileID.concretepowder);
-Callback.addCallback("DestroyBlock", function (coords, block, player) {
+Landslide.Cfg.Destroy && Callback.addCallback("DestroyBlock", function (coords, block, player) {
     Landslide.inside(coords.x, coords.y + 1, coords.z, BlockSource.getDefaultForActor(player));
 });
-Callback.addCallback("ItemUse", function (coords, item, block, isExternal, player) {
+Landslide.Cfg.Build && Callback.addCallback("ItemUse", function (coords, item, block, isExternal, player) {
     Threading.initThread("landslide", function () {
         Landslide.outside(coords.relative.x, coords.relative.y, coords.relative.z, BlockSource.getDefaultForActor(player));
     });
 });
-Callback.addCallback("EntityRemoved", function (entity) {
+Landslide.Cfg.Fall && Callback.addCallback("EntityRemoved", function (entity) {
     if (Entity.getType(entity) === EEntityType.FALLING_BLOCK) {
         var coords = Landslide.integerCoords(Entity.getPosition(entity));
         Landslide.outside(coords.x, coords.y, coords.z, BlockSource.getDefaultForActor(entity));
+    }
+});
+Landslide.Cfg.Collapse && Callback.addCallback("tick", function () {
+    for (var _i = 0, _a = Network.getConnectedPlayers(); _i < _a.length; _i++) {
+        var player = _a[_i];
+        Landslide.collapse(player);
     }
 });
 ModAPI.registerAPI("LandslideMod", { Landslide: Landslide });
