@@ -32,7 +32,7 @@ namespace Landslide {
 
     export function addGravityBlock(id: number): void {
         gravityBlocks[id] = true;
-        World.setBlockChangeCallbackEnabled(id, true);
+        //World.setBlockChangeCallbackEnabled(id, true);
     }
 
 
