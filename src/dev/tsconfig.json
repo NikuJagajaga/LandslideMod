@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "lib": [
+            "ESNext"
+        ],
+        "strict": false,
+        "skipLibCheck": true,
+        "outFile": "../main.js",
+        "newLine": "LF",
+        "removeComments": true,
+        "experimentalDecorators": true
+    },
+    "include": [
+
+        "header.ts"
+
+    ],
+    "files": [
+        "../../declarations/android.d.ts",
+        "../../declarations/core-engine.d.ts"
+    ]
+}

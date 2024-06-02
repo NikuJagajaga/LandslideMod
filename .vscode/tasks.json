@@ -1,17 +1,44 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
-    "version": "2.0.0",
-    "tasks": [
+	"version": "2.0.0",
+	"tasks": [
         {
-            "label": "Push All",
+            "label": "Compile",
+            "type": "typescript",
+            "tsconfig": "src/dev/tsconfig.json",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Push Codes",
             "type": "shell",
-            "command": "adb push 'D:/icmod/Landslide Mod/src/.' '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/Landslide Mod/.'",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": []
+            "command": [
+                "adb push src/main.js '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}';",
+                "adb push src/launcher.js '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}';",
+                "adb push src/lib/. '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}/lib'"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Compile & Push Codes",
+            "type": "shell",
+            "command": [
+                "adb push src/main.js '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}';",
+                "adb push src/launcher.js '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}';",
+                "adb push src/lib/. '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}/lib'"
+            ],
+            "group": "build",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Compile"]
+        },
+        {
+            "label": "Compile & Push All",
+            "type": "shell",
+            "command": "adb push src/. '/storage/emulated/0/games/horizon/packs/Inner_Core/innercore/mods/${workspaceFolderBasename}'",
+            "group": "build",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Compile"]
         }
     ]
 }

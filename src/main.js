@@ -1,136 +1,98 @@
-const Landslide = {
-
-    chain: __config__.getBool("Landslide.Chain"),
-
-    coords: [
-        {x: 0, z: -1},
-        {x: 0, z: 1},
-        {x: -1, z: 0},
-        {x: 1, z: 0}
-    ],
-
-    blocks: {
-        12: true,//sand
-        13: true,//gravel
-        122: true,//dragon_egg
-        145: true,//anvil
-        237: true//concrete_powder
-    },
-
-    randomDir: function(){
-        const array = [0, 1, 2, 3];
-        let j = 0;
-        for(let i = 3; i > 0; i--) {
+var Landslide;
+(function (Landslide) {
+    var gravityBlocks = {};
+    function isGravityBlock(id) {
+        return gravityBlocks[id] || false;
+    }
+    Landslide.isGravityBlock = isGravityBlock;
+    function addGravityBlock(id) {
+        gravityBlocks[id] = true;
+    }
+    Landslide.addGravityBlock = addGravityBlock;
+    function shuffledSides() {
+        var _a;
+        var sides = [
+            EBlockSide.NORTH,
+            EBlockSide.SOUTH,
+            EBlockSide.WEST,
+            EBlockSide.EAST
+        ];
+        var j = 0;
+        for (var i = sides.length - 1; i > 0; i--) {
             j = Math.random() * (i + 1) | 0;
-            [array[i], array[j]] = [array[j], array[i]];
+            _a = [sides[j], sides[i]], sides[i] = _a[0], sides[j] = _a[1];
         }
-        return array;
-    },
-
-    integerCoords: function(coords){
-        coords.x < 0 && coords.x--;
-        coords.z < 0 && coords.z--;
-        coords.x |= 0;
-        coords.y |= 0;
-        coords.z |= 0;
-        return coords;
-    },
-
-    inside: function(coords){
-        const dirs = this.randomDir();
-        let x = z = 0;
-        let air, block;
-        for(let i = 0; i < 4; i++){
-            x = coords.x + this.coords[dirs[i]].x;
-            z = coords.z + this.coords[dirs[i]].z;
-            air = World.getBlock(coords.x, coords.y, coords.z);
-            block = World.getBlock(x, coords.y, z);
-            if(World.canTileBeReplaced(air.id, air.data) && this.blocks[block.id]){
-                World.setFullBlock(coords.x, coords.y, coords.z, block);
-                World.destroyBlock(x, coords.y, z);
-                this.chain && this.inside({x: x, y: coords.y + 1, z: z});
-                break;
-            }
-        }
-    },
-
-    outside: function(coords){
-        let block = World.getBlock(coords.x, coords.y - 1, coords.z);
-        if(World.canTileBeReplaced(block.id, block.data)){
-            return;
-        }
-        const dirs = this.randomDir();
-        let x = z = 0;
-        let air1, air2;
-        for(let i = 0; i < 4; i++){
-            x = coords.x + this.coords[dirs[i]].x;
-            z = coords.z + this.coords[dirs[i]].z;
-            block = World.getBlock(coords.x, coords.y, coords.z);
-            air1 = World.getBlock(x, coords.y, z);
-            air2 = World.getBlock(x, coords.y - 1, z);
-            if(this.blocks[block.id] && World.canTileBeReplaced(air1.id, air1.data) && World.canTileBeReplaced(air2.id, air2.data)){
-                World.setFullBlock(x, coords.y, z, block);
-                World.destroyBlock(coords.x, coords.y, coords.z);
-                break;
-            }
-        }
-    },
-
-    setup: function(){
-        for(let id in this.blocks){
-            World.setBlockChangeCallbackEnabled(id - 0, true);
-        }
+        return sides;
     }
-
-};
-
-/*
-Callback.addCallback("PostLoaded", function(){
-    Landslide.setup();
-});
-
-Callback.addCallback("BlockChanged", function(coords, oldBlock, newBlock){
-    new java.lang.Thread(function(){
-        if(World.canTileBeReplaced(oldBlock.id, oldBlock.data) && Landslide.blocks[newBlock.id]){
-            Landslide.outside(coords);
-        }
-    }).start();
-});
-*/
-
-__config__.getBool("Landslide.Build") && Callback.addCallback("ItemUse", function(coords, item){
-    if(Landslide.blocks[item.id]){
-        new java.lang.Thread(function(){
-            Landslide.outside(coords.relative);
-        }).start();
+    Landslide.shuffledSides = shuffledSides;
+    function integerCoords(coords) {
+        var x = coords.x, y = coords.y, z = coords.z;
+        x < 0 && x--;
+        z < 0 && z--;
+        x |= 0;
+        y |= 0;
+        z |= 0;
+        return { x: x, y: y, z: z };
     }
-});
-
-__config__.getBool("Landslide.Fall") && Callback.addCallback("EntityRemoved", function(ent){
-    if(Entity.getType(ent) === Native.EntityType.FALLING_BLOCK){
-        Landslide.outside(Landslide.integerCoords(Entity.getPosition(ent)));
-    }
-});
-
-__config__.getBool("Landslide.Destroy") && Callback.addCallback("DestroyBlock", function(coords, block){
-    if(Landslide.blocks[block.id]){
-        coords.y++;
-        Landslide.inside(coords);
-    }
-});
-
-__config__.getBool("Collapse") && Callback.addCallback("LevelLoaded", function(){
-    Updatable.addUpdatable({
-        update: function(){
-            const pos = Landslide.integerCoords(Player.getPosition());
-            pos.y -= 2;
-            if(Landslide.blocks[World.getBlockID(pos.x, pos.y, pos.z)]){
-                while(Landslide.blocks[World.getBlockID(pos.x, --pos.y, pos.z)]);
-                if(World.canTileBeReplaced(World.getBlockID(pos.x, pos.y, pos.z))){
-                    World.setBlock(pos.x, pos.y, pos.z, 1, 0);
-                    World.setBlock(pos.x, pos.y, pos.z, 0, 0);
+    Landslide.integerCoords = integerCoords;
+    function inside(x, y, z, region) {
+        var center = region.getBlock(x, y, z);
+        if (World.canTileBeReplaced(center.id, center.data)) {
+            var sides = shuffledSides();
+            var coords = void 0;
+            var neighbour = void 0;
+            for (var i = 0; i < sides.length; i++) {
+                coords = World.getRelativeCoords(x, y, z, sides[i]);
+                neighbour = region.getBlock(coords.x, coords.y, coords.z);
+                if (isGravityBlock(neighbour.id)) {
+                    region.destroyBlock(coords.x, coords.y, coords.z, false);
+                    region.setBlock(x, y, z, neighbour.id, neighbour.data);
+                    inside(coords.x, coords.y + 1, coords.z, region);
+                    break;
                 }
             }
         }
+    }
+    Landslide.inside = inside;
+    function outside(x, y, z, region) {
+        var center = region.getBlock(x, y, z);
+        var under = region.getBlock(x, y - 1, z);
+        if (isGravityBlock(center.id) && !World.canTileBeReplaced(under.id, under.data)) {
+            var sides = shuffledSides();
+            var coords = void 0;
+            var neighbour = void 0;
+            var neighbourUnder = void 0;
+            for (var i = 0; i < sides.length; i++) {
+                coords = World.getRelativeCoords(x, y, z, sides[i]);
+                neighbour = region.getBlock(coords.x, coords.y, coords.z);
+                neighbourUnder = region.getBlock(coords.x, coords.y - 1, coords.z);
+                if (World.canTileBeReplaced(neighbour.id, neighbour.data) && World.canTileBeReplaced(neighbourUnder.id, neighbourUnder.data)) {
+                    region.destroyBlock(x, y, z, false);
+                    region.setBlock(coords.x, coords.y, coords.z, center.id, center.data);
+                    break;
+                }
+            }
+        }
+    }
+    Landslide.outside = outside;
+})(Landslide || (Landslide = {}));
+Landslide.addGravityBlock(VanillaTileID.sand);
+Landslide.addGravityBlock(VanillaTileID.gravel);
+Landslide.addGravityBlock(VanillaTileID.dragon_egg);
+Landslide.addGravityBlock(VanillaTileID.anvil);
+Landslide.addGravityBlock(VanillaTileID.concretepowder);
+Callback.addCallback("DestroyBlock", function (coords, block, player) {
+    Landslide.inside(coords.x, coords.y + 1, coords.z, BlockSource.getDefaultForActor(player));
+});
+Callback.addCallback("ItemUse", function (coords, item, block, isExternal, player) {
+    Threading.initThread("landslide", function () {
+        Landslide.outside(coords.relative.x, coords.relative.y, coords.relative.z, BlockSource.getDefaultForActor(player));
     });
 });
+Callback.addCallback("EntityRemoved", function (entity) {
+    if (Entity.getType(entity) === EEntityType.FALLING_BLOCK) {
+        var coords = Landslide.integerCoords(Entity.getPosition(entity));
+        Landslide.outside(coords.x, coords.y, coords.z, BlockSource.getDefaultForActor(entity));
+    }
+});
+ModAPI.registerAPI("LandslideMod", { Landslide: Landslide });

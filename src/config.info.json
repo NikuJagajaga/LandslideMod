@@ -1,0 +1,33 @@
+{
+    "properties": {
+        "enabled": {
+            "name": {"en": "Enable mod"},
+            "index": 0
+        },
+        "Landslide": {
+            "name": {"en": "Cause a landslide ..."},
+            "collapsible": true,
+            "index": 1
+        },
+        "Landslide.Fall": {
+            "name": {"en": "where a block fallen"},
+            "index": 2
+        },
+        "Landslide.Destroy": {
+            "name": {"en": "when destroy a block"},
+            "index": 3
+        },
+        "Landslide.Build": {
+            "name": {"en": "when build a block"},
+            "index": 4
+        },
+        "Landslide.Chain": {
+            "name": {"en": "in a chain"},
+            "index": 5
+        },
+        "Collapse": {
+            "name": {"en": "When you step a gravity block in the air, it collapses"},
+            "index": 6
+        }
+    }
+}
